@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html>
+    <head>
+      <meta charset="utf-8">
+      <title>JQ用</title>
+      <style>
+        body
+        {
+          color: gray;
+        }
+        form
+        {
+          text-align: center;
+        }
+        label,input,button
+        {
+          font-size: 30px;
+        }
+        input
+        {
+          color: black;
+        }
+        button
+        {
+          background-color: lightblue;
+        }
+        input[type=text]
+        {
+          width: 250px;
+        }
+        #message_box
+        {
+        font-family: '微軟正黑體', Consolas, 'Times New Roman';
+        font-size: 20px;
+        /*background-color: Teal;*/
+        width: 600px;
+        height: 300px;
+        /*text-align: center;*/
+        margin: auto;
+        }
+      </style>  
+      
+    </head>
+    <body>
+      <form>
+        <label>案場名稱:</label>
+        <input type="text" name="LocateName_text" id="LocateName_text" autofocus>
+        <p></p>
+        <label>案場編號:</label>
+        <input type="text" name="LocateID_text" id="LocateID_text" autofocus>
+        <p></p>
+        <label>INV數量:</label>
+        <input type="number" name="INVNumber_text" id="INVNumber_text">
+        <p></p>
+        <label>單台INV最大MPPT/PV數量:</label>
+        <input type="number" name="MPPTNumber_text" id="MPPTNumber_text">
+        <p></p>
+        <label>日照計數量:(若無則填0)</label>
+        <input type="number" name="IRRNumber_text" id="IRRNumber_text">
+        <p></p>
+        <label>INV型號</label>
+        <select id="INVevent_text">
+            <option value="">請選擇INV型號(用於生成告警JQ格式)</option>
+            <option value="DeltaEventIndexes" selected>台達M30A相同modbus table</option>
+            <!--<option value="SolarEventIndexes">solaredge SE27.6K</option>-->
+            <option value="HUAWEISUN2000EventIndexes">華為SUN2000(60KTL)</option>
+            <option value="HUAWEI36KTLIndexes">華為36KTL</option>
+            <option value="Others">其他未知</option>
+        </select>
+        <p></p>
+        <label>是否有高壓盤</label>
+        <select id="HVMeter_text">
+            <option value="">是否有高壓盤(用於生成告警JQ格式)</option>
+            <option value="1" selected>是</option>
+            <option value="0">否</option>
+        </select>
+        <p></p>
+        <label>是否有低壓盤</label>
+        <select id="LVMeter_text">
+            <option value="">是否有低壓盤(用於生成告警JQ格式)</option>
+            <option value="1" selected>是</option>
+            <option value="0">否</option>
+        </select>
+        <p></p>
+        <label>是否有風速計</label>
+        <select id="Anemometer_text">
+            <option value="">是否有風速計(用於生成告警JQ格式)</option>
+            <option value="1" selected>是</option>
+            <option value="0">否</option>
+        </select>
+        <p></p>
+        <label>是否有水位計</label>
+        <select id="Waterlevel_text">
+            <option value="">是否有水位計(用於生成告警JQ格式)</option>
+            <option value="1" selected>是</option>
+            <option value="0">否</option>
+        </select>
+        <p></p>
+        <label>是否有環溫錶頭</label>
+        <select id="ENVtemp_text">
+            <option value="">是否有環溫錶頭(用於生成告警JQ格式)</option>
+            <option value="1" selected>是</option>
+            <option value="0">否</option>
+        </select>
+        <p></p>
+        <label>是否有模組溫度錶頭</label>
+        <select id="PVtemp_text">
+            <option value="">是否有模組溫度錶頭(用於生成告警JQ格式)</option>
+            <option value="1" selected>是</option>
+            <option value="0">否</option>
+        </select>
+        <p></p>
+        
+        <button type="button" onclick="createInput()">依照INV數量生成裝置容量輸入表格</button>
+        <p>請自行新增每台裝置容量:</p>
+        <label>各inv容量:</label>
+        <div id="inputBox">
+        </div>
+
+        <p></p>
+        <button type="button" onclick="createACkwhbaseInput()">生成ACkwh基準值表格</button>
+        <p>請自行新增每台累積發電量基準值:</p>
+        <label>各inv累積發電量基準值(若無請填0):</label>
+        <div id="ACkwhbaseinputBox">
+        </div>
+
+        <p></p>
+        <button type="button" onclick="getValue()">getvalue to JQ</button>
+        <p id="capacitydemo"></p>
+        <p id="ACkwhbasedemo"></p>
+      </form> 
+        <div id ="element" style= "visibility: hidden;">
+        <p></p>
+        <center>
+        <button type="button" name="calculate_button" id="calculate_button" onclick="calculate(event);">生成JQ</button>
+        <button type="button" onclick="download()">download</button>
+        </center>
+        <div id="message_box" scrollAmount="10";>&nbsp;</div>
+        </div>
+        <script>
+          let result
+          const inputBox = document.getElementById('inputBox')
+          const AllCapacity =[];
+          function createInput () {
+            let inputLength = Number(INVNumber_text.value);
+            inputBox.innerHTML = ''
+            for (var i = 0; i < inputLength; i++){
+            const input = document.createElement('input')
+            input.name = 'capacity_text[]'
+            input.type = 'number'
+            inputBox.appendChild(input)
+            }
+            console.log(inputLength)
+          }
+              createInput()
+
+
+            const ACkwhbaseinputBox = document.getElementById('ACkwhbaseinputBox')
+            function createACkwhbaseInput () {
+                let inputLength = Number(INVNumber_text.value);
+                ACkwhbaseinputBox.innerHTML = ''
+                for (let i = 0; i < inputLength; i++){
+                const input = document.createElement('input')
+                input.name = 'ACkwhbase_text[]'
+                input.type = 'number'
+                ACkwhbaseinputBox.appendChild(input)
+                }
+                console.log(inputLength)
+                }
+
+                const ACkwhbasevalueARR = []
+                createACkwhbaseInput ()
+            function getValue(){
+                var capacity = document.getElementsByName('capacity_text[]');
+                for (let i = 0; i <capacity.length; i++) {
+                AllCapacity[i]=capacity[i].value;
+                    document.getElementById("capacitydemo").innerHTML = AllCapacity;
+                }
+                const ACkwhbase = document.getElementsByName('ACkwhbase_text[]');
+                for (let i = 0; i <ACkwhbase.length; i++) {
+                ACkwhbasevalueARR[i]=ACkwhbase[i].value;
+                    document.getElementById("ACkwhbasedemo").innerHTML = ACkwhbasevalueARR;
+                }
+                element.style.visibility = 'visible'
+            }
+            function download () {
+            var element = document.createElement('a')
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(message_box.innerText)) // 
+            element.setAttribute('download', 'sendOutFormat.jq')  //sendOutFormat.jq 檔案名稱
+            element.click()
+             }
+         
+          // 在此定義函數 名稱
+          // 加入event使其適用於其他瀏覽器
+          function calculate(event)
+          {
+            
+            // message_box.stop();
+            // 定義函數內部可被使用的變數。
+           
+            
+            // 假使被輸入了無法順利轉換成為數值的字串內容的話，內建函數 Number  就會傳回「並不是一個數值 (NaN, not a number)」...。
+            var INVNumber, MPPTNumber, LocateName, LocateID, IRRNumber, INVevent, HVMeter,LVMeter, PV_P,POWER_S,POWER_R,POWER_T,EFF;
+            var Waterlevel,Anemometer,ENVtemp,PVtemp;
+            LocateName = String(LocateName_text.value);
+            LocateID = String(LocateID_text.value);
+            INVNumber = Number(INVNumber_text.value);
+            MPPTNumber = Number(MPPTNumber_text.value);
+            IRRNumber = Number(IRRNumber_text.value);
+            INVevent = document.getElementById('INVevent_text').value
+            HVMeter = document.getElementById('HVMeter_text').value
+            LVMeter = document.getElementById('LVMeter_text').value
+            Anemometer = document.getElementById('Anemometer_text').value
+            Waterlevel = document.getElementById('Waterlevel_text').value
+            ENVtemp = document.getElementById('ENVtemp_text').value
+            PVtemp = document.getElementById('PVtemp_text').value
+            PV_P = `GenerateByIndex("inv_"; .inverterIndexes; "pv_p"; .PVIndexes; .data)`
+            POWER_R = `GenerateA("inv_"; .inverterIndexes; "power_r"; .data)`
+            POWER_S = `GenerateA("inv_"; .inverterIndexes; "power_s"; .data)`
+            POWER_T = `GenerateA("inv_"; .inverterIndexes; "power_t"; .data)`
+            EFF=`GenerateA("inv_"; .inverterIndexes; "Eff"; .data)`
+            switch (INVevent) {
+                case "HUAWEISUN2000EventIndexes":
+                    PV_P = `GenerateCalculateABCrossorByIndexanddivide1000("inv_"; .inverterIndexes; "pv_a"; "pv_v"; .PVIndexes; .data)`
+                    POWER_R = `GenerateABDivisor("inv_"; .inverterIndexes; "Vrs"; "Rc"; 1730; .data)`
+                    POWER_S = `GenerateABDivisor("inv_"; .inverterIndexes; "Vst"; "Sc"; 1730; .data)`
+                    POWER_T = `GenerateABDivisor("inv_"; .inverterIndexes; "Vrt"; "Tc"; 1730; .data)`
+                    break;
+                case "SolarEventIndexes":
+                    EFF=`GenerateADivideB("inv_"; .inverterIndexes; "acp"; "dcp"; .data)`
+                    break;
+                case "Others":
+                    PV_P = `GenerateCalculateABCrossorByIndexanddivide1000("inv_"; .inverterIndexes; "pv_a"; "pv_v"; .PVIndexes; .data)`
+                    POWER_R = `GenerateABDivisor("inv_"; .inverterIndexes; "Vrs"; "Rc"; 1730; .data)`
+                    POWER_S = `GenerateABDivisor("inv_"; .inverterIndexes; "Vst"; "Sc"; 1730; .data)`
+                    POWER_T = `GenerateABDivisor("inv_"; .inverterIndexes; "Vrt"; "Tc"; 1730; .data)`
+                    EFF=`GenerateADivideB("inv_"; .inverterIndexes; "acp"; "dcp"; .data)`
+                break;
+            }
+            console.log(HVMeter)
+            console.log(LVMeter)
+            console.log(Anemometer)
+            console.log(Waterlevel)
+            console.log(POWER_R)
+            console.log(POWER_S)
+            console.log(POWER_T)
+            console.log(EFF)
+            var IRRValue=``
+            var IRRErrorMessage=``
+            if (IRRNumber == 0){
+                IRRErrorMessage=``
+                IRRValue=`[null]`
+            }
+            else{
+                IRRErrorMessage=`IRR: GenerateINVStatus("IRR_"; .iRRIndexes; .data),`
+                IRRValue=`GenerateIRRArray("IRR_"; .iRRIndexes; "IRR"; .data)`
+            }
+            var PVtempValue=``
+            var PVtempErrorMessage=``
+            if (PVtemp == 1){
+                PVtempValue=`Generate("PV_TEMP"; "temp"; .data)`
+                PVtempErrorMessage=`PVTemp: GenerateStatus("PV_TEMP";.data),`
+            }
+            else{
+                PVtempValue=`null`
+            }
+            var ENVtempValue=``
+            var ENVtempErrorMessage=``
+            if (ENVtemp == 1){
+                ENVtempValue=`Generate("ENV_TEMP"; "temp"; .data)`
+                ENVtempErrorMessage=`ENVtemp: GenerateStatus("ENV_TEMP";.data),`
+            }
+            else{
+                ENVtempValue=`null`
+            }
+            var WaterlevelMessage=``
+            var WaterlevelErrormessage=``
+            if (Waterlevel == 1){
+                WaterlevelMessage = `Waterlevel: Generate("Waterlevel"; "Measurement_output_value"; .data),`
+                WaterlevelErrormessage=`Waterlevel: GenerateStatus("Waterlevel";.data),`
+            }
+            var AnemometerMessage=``
+            var AnemometerErrormessage=``
+            if (Anemometer == 1){
+                AnemometerMessage = `Anemometer: Generate("Anemometer"; "Wind_speed"; .data),`
+                AnemometerErrormessage=`Anemometer: GenerateStatus("Anemometer";.data),`
+            }
+            var Errormessage =``
+            var etc = ``
+            if (HVMeter == 1 && LVMeter == 1){
+                Errormessage = `
+            HV_Meter: GenerateStatus("HV_meter";.data),
+            LV_Meter: GenerateStatus("LV_meter";.data),`
+                etc = `etc:
+                {
+                    "HV-meter": {
+                        Vln_a: Generate("HV_meter"; "Vln_a"; .data),
+                        Vln_b: Generate("HV_meter"; "Vln_b"; .data),
+                        Vln_c: Generate("HV_meter"; "Vln_c"; .data),
+                        Vll_ab: Generate("HV_meter"; "Vll_ab"; .data),
+                        Vll_bc: Generate("HV_meter"; "Vll_bc"; .data),
+                        Vll_ca: Generate("HV_meter"; "Vll_ca"; .data),
+                        I_a: Generate("HV_meter"; "I_a"; .data),
+                        I_b: Generate("HV_meter"; "I_b"; .data),
+                        I_c: Generate("HV_meter"; "I_c"; .data),
+                        Freq: Generate("HV_meter"; "freq"; .data),
+                        P: Generate("HV_meter"; "P"; .data),
+                        KVAR_tot: Generate("HV_meter"; "Q"; .data),
+                        KVA_tot: Generate("HV_meter"; "S"; .data)
+                    },
+                    "LV-meter": {
+                        Vln_a: Generate("LV_meter"; "Vln_a"; .data),
+                        Vln_b: Generate("LV_meter"; "Vln_b"; .data),
+                        Vln_c: Generate("LV_meter"; "Vln_c"; .data),
+                        Vll_ab: Generate("LV_meter"; "Vll_ab"; .data),
+                        Vll_bc: Generate("LV_meter"; "Vll_bc"; .data),
+                        Vll_ca: Generate("LV_meter"; "Vll_ca"; .data),
+                        I_a: Generate("LV_meter"; "I_a"; .data),
+                        I_b: Generate("LV_meter"; "I_b"; .data),
+                        I_c: Generate("LV_meter"; "I_c"; .data),
+                        Freq: Generate("LV_meter"; "freq"; .data),
+                        P: Generate("LV_meter"; "P"; .data),
+                        KVAR_tot: Generate("LV_meter"; "Q"; .data),
+                        KVA_tot: Generate("LV_meter"; "S"; .data)
+                    }
+                    
+                },`
+                }
+                else if (HVMeter == 1 && LVMeter == 0){
+                    Errormessage = `HV_Meter: GenerateStatus("HV_meter";.data),`
+                    etc = `etc:
+                {
+                    "HV-meter": {
+                        Vln_a: Generate("HV_meter"; "Vln_a"; .data),
+                        Vln_b: Generate("HV_meter"; "Vln_b"; .data),
+                        Vln_c: Generate("HV_meter"; "Vln_c"; .data),
+                        Vll_ab: Generate("HV_meter"; "Vll_ab"; .data),
+                        Vll_bc: Generate("HV_meter"; "Vll_bc"; .data),
+                        Vll_ca: Generate("HV_meter"; "Vll_ca"; .data),
+                        I_a: Generate("HV_meter"; "I_a"; .data),
+                        I_b: Generate("HV_meter"; "I_b"; .data),
+                        I_c: Generate("HV_meter"; "I_c"; .data),
+                        Freq: Generate("HV_meter"; "freq"; .data),
+                        P: Generate("HV_meter"; "P"; .data),
+                        KVAR_tot: Generate("HV_meter"; "Q"; .data),
+                        KVA_tot: Generate("HV_meter"; "S"; .data)
+                    }
+                },`
+                }
+                else if (HVMeter == 0 && LVMeter == 1){
+                    Errormessage = `LV_Meter: GenerateStatus("LV_meter";.data),`
+                    etc = `etc:
+                {
+                    "LV-meter": {
+                        Vln_a: Generate("LV_meter"; "Vln_a"; .data),
+                        Vln_b: Generate("LV_meter"; "Vln_b"; .data),
+                        Vln_c: Generate("LV_meter"; "Vln_c"; .data),
+                        Vll_ab: Generate("LV_meter"; "Vll_ab"; .data),
+                        Vll_bc: Generate("LV_meter"; "Vll_bc"; .data),
+                        Vll_ca: Generate("LV_meter"; "Vll_ca"; .data),
+                        I_a: Generate("LV_meter"; "I_a"; .data),
+                        I_b: Generate("LV_meter"; "I_b"; .data),
+                        I_c: Generate("LV_meter"; "I_c"; .data),
+                        Freq: Generate("LV_meter"; "freq"; .data),
+                        P: Generate("LV_meter"; "P"; .data),
+                        KVAR_tot: Generate("LV_meter"; "Q"; .data),
+                        KVA_tot: Generate("LV_meter"; "S"; .data)
+                    }
+                },`
+                }
+                else if (HVMeter == 0 && LVMeter == 0){
+                    Errormessage = ``
+                    etc = ``
+                }
+            console.log(Errormessage)
+            console.log(INVevent)
+            const INVARR = []
+            for (let i = 1; i <= INVNumber; i++) {
+                if (i < 10){
+                INVARR.push(`"0${i}"`)
+                } else {
+                INVARR.push(`"${i}"`)
+                }
+
+            }
+            const MPPTARR = []
+            for (let i = 1; i <= MPPTNumber; i++) {
+                MPPTARR.push(`"${i}"`)
+            }
+            const IRRARR = []
+            for (let i = 1; i <= IRRNumber; i++) {
+                if (i < 10){
+                IRRARR.push(`"0${i}"`)
+                } else {
+                IRRARR.push(`"${i}"`)
+                }
+            }
+            const EVENTARR = []
+            for (let i = 1; i <= INVNumber; i++) {
+                if (i<10){
+                EVENTARR.push(`EventOneArray("inv_0${i}"; .${INVevent}; .data)`)
+                } else {
+                EVENTARR.push(`EventOneArray("inv_${i}"; .${INVevent}; .data)`)
+                }
+            }
+            const ACkwhARR = []
+            for (let i = 1; i <= INVNumber; i++) {
+                if (i<10){
+                    ACkwhARR.push(`(.data.inv_0${i} | if .status == 0 then (.AC_kwh + ${ACkwhbasevalueARR[i-1]})*100 |floor| . /100 else 0 end)`)
+                } 
+                else {
+                    ACkwhARR.push(`(.data.inv_${i} | if .status == 0 then (.AC_kwh + ${ACkwhbasevalueARR[i-1]})*100 |floor| . /100 else 0 end)`)
+                }
+            }
+
+            
+
+            console.log(INVARR);
+            console.log(MPPTARR);
+            console.log(IRRARR);
+            if(event.target.id = "calculate_button");
+            {
+            const checkarr = [LocateName, LocateID, INVNumber, MPPTNumber]
+            const check = checkarr.every(x => x !== '' && x !== 0)
+            console.log(checkarr);
+            if (!check) return 
+              message_box.innerText = `def FormatFloat: . * 100 | floor | . / 100;
+def IRRFormatFloat: . * 1000 | floor | . / 1000;
+def GenerateCapacity($source_indexes):
+    map(   
+        $source_indexes
+    )
+;
+def GenerateINVStatus($source_prefix; $source_indexes; $data):
+    $source_indexes | map(
+        if $data."\\($source_prefix+(.|tostring))".status !=0 then "設備斷訊" else 0 end
+    )
+;
+def GenerateStatus($source_prefix; $data):
+    (
+        if $data."\\($source_prefix)".status !=0 then "設備斷訊" else 0 end
+    )
+;
+def EventOneArray($source_prefix; $event_indexes; $data):
+    $event_indexes | map(
+        if $data."\\($source_prefix)".status == 0 then $data."\\($source_prefix)"."\\((.|tostring))" else -1 end
+    )
+;
+def GenerateEvent($source_prefix; $source_indexes; $a; $data):
+    $source_indexes | map(
+        if $data."\\($source_prefix+(.|tostring))".status == 0 then
+            $data."\\($source_prefix+(.|tostring))"."\\($a)" | FormatFloat
+        else 0 end
+    )
+;
+def Generate($source; $tag_prefix; $data):
+(
+if $data."\\($source)".status == 0 then
+    (
+        if ($data."\\($source)"."\\($tag_prefix)" ) != null
+        then
+        ($data."\\($source)"."\\($tag_prefix)") | FormatFloat
+        else
+        ($data."\\($source)"."\\($tag_prefix)")
+        end
+    )
+else 0 end
+)
+;
+def GenerateConstSourceByIndex($source; $tag_prefix; $tag_indexes; $data):
+(
+    (
+        $tag_indexes | map(
+            if $data."\\($source)".status == 0 then (
+                if
+                ($data."\\($source)"."\\($tag_prefix+(.|tostring))") != null
+                then
+                $data."\\($source)"."\\($tag_prefix+(.|tostring))"| FormatFloat
+                else ($data."\\($source)"."\\($tag_prefix+(.|tostring))")
+                end )
+            else 0 end
+        )
+    )
+)
+;
+def GenerateByIndex($source_prefix; $source_indexes; $tag_prefix; $tag_indexes; $data):
+    $source_indexes | map(
+        GenerateConstSourceByIndex($source_prefix+(.|tostring); $tag_prefix; $tag_indexes; $data)
+    )
+;
+def GenerateA($source_prefix; $source_indexes; $a; $data):
+    $source_indexes | map(
+        if $data."\\($source_prefix+(.|tostring))".status == 0 then(
+            if ($data."\\($source_prefix+(.|tostring))"."\\($a)" ) > 0 
+            then
+            $data."\\($source_prefix+(.|tostring))"."\\($a)" | FormatFloat
+            else 0 end )
+        else 0 end
+    )
+;
+def GenerateIRRArray($source_prefix; $source_indexes; $a; $data):
+    $source_indexes | map(
+        if $data."\\($source_prefix+(.|tostring))".status == 0 then(
+            if ($data."\\($source_prefix+(.|tostring))"."\\($a)" ) > 0 
+            then
+            $data."\\($source_prefix+(.|tostring))"."\\($a)" | IRRFormatFloat
+            else 0 end )
+        else 0 end
+    )
+;
+def GenerateABDivisor($source_prefix; $source_indexes; $a; $b; $divisor; $data):
+    $source_indexes | map(
+        if $data."\\($source_prefix+(.|tostring))".status == 0 then
+        (
+            if (( $data."\\($source_prefix+(.|tostring))"."\\($a)" ) != 0 and ( $data."\\($source_prefix+(.|tostring))"."\\($b)") != 0)
+            then
+            $data."\\($source_prefix+(.|tostring))"."\\($a)" * $data."\\($source_prefix+(.|tostring))"."\\($b)" / $divisor | FormatFloat
+            else 0 end
+        )
+        else 0 end
+    )
+;
+def GenerateACrossor($source_prefix; $source_indexes; $a; $crossor; $data):
+    $source_indexes | map(
+        if $data."\\($source_prefix+(.|tostring))".status == 0 then
+            $data."\\($source_prefix+(.|tostring))"."\\($a)" * $crossor | FormatFloat
+        else 0 end
+    )
+;
+def GeneratetempSourceByIndex($source; $tag_prefix; $tag_indexes; $data):
+    $tag_indexes | map(
+        if $data."\\($source)".status == 0 then
+            $data."\\($source)"."\\($tag_prefix)" | FormatFloat
+        else 0 end
+    )
+;
+def GenerateOnlyOneTempIndex($source_prefix; $source_indexes; $tag_prefix; $tag_indexes; $data):
+    $source_indexes | map(
+        GeneratetempSourceByIndex($source_prefix+(.|tostring); $tag_prefix; $tag_indexes; $data)
+    )
+;
+def GenerateABCrossor($source; $tag_prefix_a; $tag_prefix_b; $tag_indexes; $data):
+(
+    (
+        $tag_indexes | map(
+            if $data."\\($source)".status == 0 then (
+                if
+                ($data."\\($source)"."\\($tag_prefix_a+(.|tostring))") != null 
+                then
+                $data."\\($source)"."\\($tag_prefix_a+(.|tostring))" * $data."\\($source)"."\\($tag_prefix_b+(.|tostring))"| FormatFloat
+                else "-1" end )
+            else 0 end
+        )
+    ) | map(select(. != "-1"))
+)
+;
+def GenerateCalculateABCrossorByIndex($source_prefix; $source_indexes; $tag_a; $tag_b; $tag_indexes; $data):
+    $source_indexes | map(
+        GenerateABCrossor($source_prefix+(.|tostring); $tag_a; $tag_b; $tag_indexes; $data)
+    )
+;
+def GenerateABCrossoranddivide1000($source; $tag_prefix_a; $tag_prefix_b; $tag_indexes; $data):
+(
+    (
+        $tag_indexes | map(
+            if $data."\\($source)".status == 0 then (
+                if
+                ($data."\\($source)"."\\($tag_prefix_a+(.|tostring))") and ($data."\\($source)"."\\($tag_prefix_b+(.|tostring))") != null 
+                then
+                $data."\\($source)"."\\($tag_prefix_a+(.|tostring))" * $data."\\($source)"."\\($tag_prefix_b+(.|tostring))" / 1000 | FormatFloat
+                else 
+                ($data."\\($source)"."\\($tag_prefix_a+(.|tostring))")
+                end )
+            else 0 end
+        )
+    ) 
+)
+;
+def GenerateCalculateABCrossorByIndexanddivide1000($source_prefix; $source_indexes; $tag_a; $tag_b; $tag_indexes; $data):
+    $source_indexes | map(
+        GenerateABCrossoranddivide1000($source_prefix+(.|tostring); $tag_a; $tag_b; $tag_indexes; $data)
+    )
+;
+def GenerateADivideB($source_prefix; $source_indexes; $a; $b; $data):
+    $source_indexes | map(
+        if $data."\\($source_prefix+(.|tostring))".status == 0 then
+        (
+            if (( $data."\\($source_prefix+(.|tostring))"."\\($a)" ) != 0 and ( $data."\\($source_prefix+(.|tostring))"."\\($b)") != 0)
+            then
+            $data."\\($source_prefix+(.|tostring))"."\\($a)" / $data."\\($source_prefix+(.|tostring))"."\\($b)" | FormatFloat
+            else 0 end
+        )
+        else 0 end
+    )
+;
+def GenerateInsulationA($source_prefix; $source_indexes; $a; $data):
+    $source_indexes | map(
+        if $data."\\($source_prefix+(.|tostring))".status == 0 then(
+            if ($data."\\($source_prefix+(.|tostring))"."\\($a)" ) > 0 
+            then
+            $data."\\($source_prefix+(.|tostring))"."\\($a)" | IRRFormatFloat
+            else 0 end )
+        else 0 end
+    )
+;
+{
+    inverterIndexes: [${INVARR}],
+    PVIndexes: [${MPPTARR}],
+    iRRIndexes: [${IRRARR}],
+    invTempIndexes: [1],
+    capacityIndexes:[${AllCapacity}],
+    DeltaEventIndexes:["alarm_E1","alarm_E2","alarm_E3","alarm_W1","alarm_W2","alarm_F1","alarm_F2","alarm_F3","alarm_F4","alarm_F5"],
+    SolarEventIndexes:["event_Gb","event_M1","event_M2","event_M3"],
+    HUAWEISUN2000EventIndexes:["event_1","event_2","event_3"],
+    HUAWEI36KTLIndexes:["event_1","event_2","event_3","event_4","event_5","event_6","event_7","event_8","event_9","event_10","event_11"],
+    data: .
+} |
+{
+    factoryName: "${LocateName}",
+    timestamp: (now+28800|strftime("%Y-%m-%dT%H:%M:%SZ")),
+    detail:
+    {
+        factoryId: "${LocateID}",
+        factoryName: "${LocateName}",
+        pv_v: GenerateByIndex("inv_"; .inverterIndexes; "pv_v"; .PVIndexes; .data),
+        pv_a: GenerateByIndex("inv_"; .inverterIndexes; "pv_a"; .PVIndexes; .data),
+        pv_p: ${PV_P},
+        PF: GenerateA("inv_"; .inverterIndexes; "PF"; .data),
+        Vrn: GenerateA("inv_"; .inverterIndexes; "Vrs"; .data),
+        Vsn: GenerateA("inv_"; .inverterIndexes; "Vst"; .data),
+        Vtn: GenerateA("inv_"; .inverterIndexes; "Vrt"; .data),
+        Rc: GenerateA("inv_"; .inverterIndexes; "Rc"; .data),
+        Sc: GenerateA("inv_"; .inverterIndexes; "Sc"; .data),
+        Tc: GenerateA("inv_"; .inverterIndexes; "Tc"; .data),
+        Eff: ${EFF},
+        temp: GenerateOnlyOneTempIndex("inv_"; .inverterIndexes; "temp"; .invTempIndexes; .data),
+        State: GenerateA("inv_"; .inverterIndexes; "State"; .data),
+        acp: GenerateA("inv_"; .inverterIndexes; "acp"; .data),
+        dcp: GenerateA("inv_"; .inverterIndexes; "dcp"; .data),
+        E_today: GenerateA("inv_"; .inverterIndexes; "E_today"; .data),
+        AC_kWh: [
+            ${ACkwhARR}
+        ],
+        freq: GenerateA("inv_"; .inverterIndexes; "freq"; .data),
+        Insulation: GenerateInsulationA("inv_"; .inverterIndexes; "Insulation"; .data),
+        event: [
+            ${EVENTARR}
+          ],
+        power_r: ${POWER_R},
+        power_s: ${POWER_S},
+        power_t: ${POWER_T},
+        capacity: (.capacityIndexes),
+        IRR: ${IRRValue},
+        PVTemp: ${PVtempValue},
+        ENVTemp: ${ENVtempValue},
+        ${WaterlevelMessage}
+        ${AnemometerMessage}
+        ErrorMessage:
+            {
+            inv: GenerateINVStatus("inv_"; .inverterIndexes; .data),
+            ${IRRErrorMessage}
+            ${PVtempErrorMessage}
+            ${ENVtempErrorMessage}
+            ${Errormessage}
+            ${WaterlevelErrormessage}
+            ${AnemometerErrormessage}
+            },
+        ${etc}
+        SYSTIME: (now | floor | tostring)
+    }
+}`;
+            }
+          }
+        </script>
+    </body>
+</html>
