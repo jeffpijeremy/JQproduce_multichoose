@@ -58,6 +58,9 @@
         <label>日照計數量:(若無則填0)</label>
         <input type="number" name="IRRNumber_text" id="IRRNumber_text">
         <p></p>
+        <label>溫度量測數量</label>
+        <input type="number" name="TempNumber_text" id="TempNumber_text">
+        <p></p>
         <label>INV型號</label>
         <select id="INVevent_text">
             <option value="">請選擇INV型號(用於生成告警JQ格式)</option>
@@ -200,8 +203,9 @@
            
             
             // 假使被輸入了無法順利轉換成為數值的字串內容的話，內建函數 Number  就會傳回「並不是一個數值 (NaN, not a number)」...。
-            var INVNumber, MPPTNumber, LocateName, LocateID, IRRNumber, INVevent, HVMeter,LVMeter, PV_P,POWER_S,POWER_R,POWER_T,EFF;
+            var INVNumber, MPPTNumber, LocateName, LocateID, IRRNumber, INVevent, HVMeter,LVMeter, PV_P,POWER_S,POWER_R,POWER_T,EFF,TempNumber;
             var Waterlevel,Anemometer,ENVtemp,PVtemp;
+            TempNumber = Number(TempNumber_text.value)
             LocateName = String(LocateName_text.value);
             LocateID = String(LocateID_text.value);
             INVNumber = Number(INVNumber_text.value);
@@ -374,6 +378,10 @@
                 }
             console.log(Errormessage)
             console.log(INVevent)
+            const TempARR = [];
+            for (let i = 1; i <= TempNumber; i++) {
+                IRRARR.push(`"${i}"`)
+            }
             const INVARR = []
             for (let i = 1; i <= INVNumber; i++) {
                 if (i < 10){
@@ -414,7 +422,7 @@
             }
 
             
-
+            console.log(TempARR);
             console.log(INVARR);
             console.log(MPPTARR);
             console.log(IRRARR);
@@ -607,7 +615,7 @@ def GenerateInsulationA($source_prefix; $source_indexes; $a; $data):
     inverterIndexes: [${INVARR}],
     PVIndexes: [${MPPTARR}],
     iRRIndexes: [${IRRARR}],
-    invTempIndexes: [1],
+    invTempIndexes: [${TempARR}],
     capacityIndexes:[${AllCapacity}],
     DeltaEventIndexes:["alarm_E1","alarm_E2","alarm_E3","alarm_W1","alarm_W2","alarm_F1","alarm_F2","alarm_F3","alarm_F4","alarm_F5"],
     SolarEventIndexes:["event_Gb","event_M1","event_M2","event_M3"],
@@ -633,7 +641,7 @@ def GenerateInsulationA($source_prefix; $source_indexes; $a; $data):
         Sc: GenerateA("inv_"; .inverterIndexes; "Sc"; .data),
         Tc: GenerateA("inv_"; .inverterIndexes; "Tc"; .data),
         Eff: ${EFF},
-        temp: GenerateOnlyOneTempIndex("inv_"; .inverterIndexes; "temp"; .invTempIndexes; .data),
+        temp: GenerateByIndex("inv_"; .inverterIndexes; "temp_"; .invTempIndexes; .data),
         State: GenerateA("inv_"; .inverterIndexes; "State"; .data),
         acp: GenerateA("inv_"; .inverterIndexes; "acp"; .data),
         dcp: GenerateA("inv_"; .inverterIndexes; "dcp"; .data),
