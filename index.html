@@ -616,7 +616,7 @@ def GenerateArrayAMinusB($source_prefix; $source_indexes; $a; $b; $data):
     $source_indexes | map(
         if $data."\\($source_prefix+(.|tostring))".status == 0 then
         (
-            if (( $data."\\($source_prefix+(.|tostring))"."\\($a)" ) != 0 and ( $data."\\($source_prefix+(.|tostring))"."\\($b)") != 0)
+            if (( $data."\\($source_prefix+(.|tostring))"."\\($a)" ) != 0 and ( $data."\\($source_prefix+(.|tostring))"."\\($b)") >= 0)
             then
             (($data."\\($source_prefix+(.|tostring))"."\\($a)") - ($data."\\($source_prefix+(.|tostring))"."\\($b)" )) | FormatFloat
             else 0 end
