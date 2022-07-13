@@ -612,7 +612,7 @@ def GenerateInsulationA($source_prefix; $source_indexes; $a; $data):
         else 0 end
     )
 ;
-def GenerateAMinusB($source_prefix; $source_indexes; $a; $b; $data):
+def GenerateArrayAMinusB($source_prefix; $source_indexes; $a; $b; $data):
     $source_indexes | map(
         if $data."\\($source_prefix+(.|tostring))".status == 0 then
         (
