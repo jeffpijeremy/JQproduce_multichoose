@@ -278,13 +278,13 @@
             else{
                 ENVtempValue=`null`
             }
-            var WaterlevelMessage=`Waterlevel:null`
+            var WaterlevelMessage=`Waterlevel:null,`
             var WaterlevelErrormessage=``
             if (Waterlevel == 1){
                 WaterlevelMessage = `Waterlevel: Generate("Waterlevel"; "Measurement_output_value"; .data),`
                 WaterlevelErrormessage=`Waterlevel: GenerateStatus("Waterlevel";.data),`
             }
-            var AnemometerMessage=`Anemometer:null`
+            var AnemometerMessage=`Anemometer:null,`
             var AnemometerErrormessage=``
             if (Anemometer == 1){
                 AnemometerMessage = `Anemometer: Generate("Anemometer"; "Wind_speed"; .data),`
