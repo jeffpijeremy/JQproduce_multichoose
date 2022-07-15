@@ -205,7 +205,7 @@
            
             
             // 假使被輸入了無法順利轉換成為數值的字串內容的話，內建函數 Number  就會傳回「並不是一個數值 (NaN, not a number)」...。
-            var INVNumber, MPPTNumber, LocateName, LocateID, IRRNumber, INVevent, HVMeter,LVMeter, PV_P,POWER_S,POWER_R,POWER_T,EFF,TempNumber,E_today;
+            var INVNumber, MPPTNumber, LocateName, LocateID, IRRNumber, INVevent, HVMeter,LVMeter, PV_P,POWER_S,POWER_R,POWER_T,EFF,TempNumber,E_today,Insulation;
             var Waterlevel,Anemometer,ENVtemp,PVtemp;
             TempNumber = Number(TempNumber_text.value)
             LocateName = String(LocateName_text.value);
@@ -226,6 +226,7 @@
             POWER_T = `GenerateA("inv_"; .inverterIndexes; "power_t"; .data)`
             EFF=`GenerateA("inv_"; .inverterIndexes; "Eff"; .data)`
             E_today=`GenerateA("inv_"; .inverterIndexes; "E_today"; .data)`
+            Insulation=`GenerateInsulationA("inv_"; .inverterIndexes; "Insulation"; .data)`
             switch (INVevent) {
                 case "HUAWEISUN2000EventIndexes":
                     PV_P = `GenerateCalculateABCrossorByIndexanddivide1000("inv_"; .inverterIndexes; "pv_a"; "pv_v"; .PVIndexes; .data)`
@@ -248,6 +249,7 @@
                     POWER_T = `GenerateABDivisor("inv_"; .inverterIndexes; "Vrt"; "Tc"; 1000; .data)`
                     EFF=`GenerateADivideB("inv_"; .inverterIndexes; "acp"; "dcp"; .data)`
                     E_today=`GenerateArrayAMinusB("inv_"; .inverterIndexes; "AC_kwh"; "AC_kwh_base"; .data)`
+                    Insulation=``
                 break;
             }
             console.log(HVMeter)
@@ -673,7 +675,7 @@ def GenerateArrayAMinusB($source_prefix; $source_indexes; $a; $b; $data):
             ${ACkwhARR}
         ],
         freq: GenerateA("inv_"; .inverterIndexes; "freq"; .data),
-        Insulation: GenerateInsulationA("inv_"; .inverterIndexes; "Insulation"; .data),
+        Insulation: ${Insulation},
         event: [
             ${EVENTARR}
           ],
