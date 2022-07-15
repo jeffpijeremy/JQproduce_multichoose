@@ -68,6 +68,7 @@
             <!--<option value="SolarEventIndexes">solaredge SE27.6K</option>-->
             <option value="HUAWEISUN2000EventIndexes">華為SUN2000(60KTL)</option>
             <option value="HUAWEI36KTLIndexes">華為36KTL</option>
+            <option value="ABBPVS100_120Indexes">ABBPVS100_120</option>
             <option value="Others">其他未知</option>
         </select>
         <p></p>
@@ -204,7 +205,7 @@
            
             
             // 假使被輸入了無法順利轉換成為數值的字串內容的話，內建函數 Number  就會傳回「並不是一個數值 (NaN, not a number)」...。
-            var INVNumber, MPPTNumber, LocateName, LocateID, IRRNumber, INVevent, HVMeter,LVMeter, PV_P,POWER_S,POWER_R,POWER_T,EFF,TempNumber;
+            var INVNumber, MPPTNumber, LocateName, LocateID, IRRNumber, INVevent, HVMeter,LVMeter, PV_P,POWER_S,POWER_R,POWER_T,EFF,TempNumber,E_today;
             var Waterlevel,Anemometer,ENVtemp,PVtemp;
             TempNumber = Number(TempNumber_text.value)
             LocateName = String(LocateName_text.value);
@@ -224,6 +225,7 @@
             POWER_S = `GenerateA("inv_"; .inverterIndexes; "power_s"; .data)`
             POWER_T = `GenerateA("inv_"; .inverterIndexes; "power_t"; .data)`
             EFF=`GenerateA("inv_"; .inverterIndexes; "Eff"; .data)`
+            E_today=`GenerateA("inv_"; .inverterIndexes; "E_today"; .data)`
             switch (INVevent) {
                 case "HUAWEISUN2000EventIndexes":
                     PV_P = `GenerateCalculateABCrossorByIndexanddivide1000("inv_"; .inverterIndexes; "pv_a"; "pv_v"; .PVIndexes; .data)`
@@ -240,6 +242,12 @@
                     POWER_S = `GenerateABDivisor("inv_"; .inverterIndexes; "Vst"; "Sc"; 1730; .data)`
                     POWER_T = `GenerateABDivisor("inv_"; .inverterIndexes; "Vrt"; "Tc"; 1730; .data)`
                     EFF=`GenerateADivideB("inv_"; .inverterIndexes; "acp"; "dcp"; .data)`
+                case "ABBPVS100_120Indexes":
+                    POWER_R = `GenerateABDivisor("inv_"; .inverterIndexes; "Vrs"; "Rc"; 1000; .data)`
+                    POWER_S = `GenerateABDivisor("inv_"; .inverterIndexes; "Vst"; "Sc"; 1000; .data)`
+                    POWER_T = `GenerateABDivisor("inv_"; .inverterIndexes; "Vrt"; "Tc"; 1000; .data)`
+                    EFF=`GenerateADivideB("inv_"; .inverterIndexes; "acp"; "dcp"; .data)`
+                    E_today=`GenerateArrayAMinusB("inv_"; .inverterIndexes; "AC_kwh"; "AC_kwh_base"; .data)`
                 break;
             }
             console.log(HVMeter)
@@ -634,6 +642,7 @@ def GenerateArrayAMinusB($source_prefix; $source_indexes; $a; $b; $data):
     SolarEventIndexes:["event_Gb","event_M1","event_M2","event_M3"],
     HUAWEISUN2000EventIndexes:["event_1","event_2","event_3"],
     HUAWEI36KTLIndexes:["event_1","event_2","event_3","event_4","event_5","event_6","event_7","event_8","event_9","event_10","event_11"],
+    ABBPVS100_120Indexes:["event_1","eventVendor_1","eventVendor_2","eventVendor_3"],
     Others:["event_1","event_2","event_3"],
     data: .
 } |
@@ -659,7 +668,7 @@ def GenerateArrayAMinusB($source_prefix; $source_indexes; $a; $b; $data):
         State: GenerateA("inv_"; .inverterIndexes; "State"; .data),
         acp: GenerateA("inv_"; .inverterIndexes; "acp"; .data),
         dcp: GenerateA("inv_"; .inverterIndexes; "dcp"; .data),
-        E_today: GenerateA("inv_"; .inverterIndexes; "E_today"; .data),
+        E_today: ${E_today},
         AC_kWh: [
             ${ACkwhARR}
         ],
